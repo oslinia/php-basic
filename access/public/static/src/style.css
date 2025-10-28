@@ -1,0 +1,13 @@
+@charset "UTF-8";
+
+a {
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+.container {
+    max-width: 992px;
+}
