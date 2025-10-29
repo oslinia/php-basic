@@ -6,7 +6,7 @@ class Main extends Auth
 {
     public function __invoke(): array
     {
-        if (parent::auth())
+        if ($this->auth)
             return parent::login();
 
         return parent::render_template('main.php');

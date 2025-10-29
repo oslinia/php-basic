@@ -6,8 +6,8 @@ use Framework\Frame;
 
 class Access extends Frame
 {
-    public bool $bool = true;
-    public string $token;
+    private bool $bool = true;
+    private string $token;
 
     private function encrypt(string $string): string
     {
@@ -55,30 +55,32 @@ class Access extends Frame
         $this->bool = false;
     }
 
-    private function login(): void
+    private function csrf(): void
     {
         $this->token = md5(microtime() . $GLOBALS['_FW']->env['salt']);
 
-        setcookie('login', $this->encrypt($this->token), path: '/');
+        setcookie('csrf', $this->encrypt($this->token), path: '/');
     }
 
-    private function post(string $user): void
+    private function login(string $user): void
     {
         if (
-            $_POST['token'] === $this->decrypt($_COOKIE['login'])
+            $_POST['csrf'] === $this->decrypt($_COOKIE['csrf'])
             and
             password_verify(
                 $_POST['password'],
                 require parent::root('resource', 'user', $user, 'password.php'),
             )
         ) {
-            setcookie('login', '', 0, '/');
+            setcookie('csrf', '', 0, '/');
 
             $this->token(
                 $_POST['name'],
                 $user,
                 parent::root('resource', 'user', $user, 'token'),
             );
+        } else {
+            $this->csrf();
         }
     }
 
@@ -111,8 +113,23 @@ class Access extends Frame
             and
             isset($_POST['password'])
         )
-            isset($users[$_POST['name']]) ? $this->post($users[$_POST['name']]) : $this->login();
+            isset($users[$_POST['name']]) ? $this->login($users[$_POST['name']]) : $this->csrf();
         else
-            isset($_COOKIE['token']) ? $this->auth($users) : $this->login();
+            isset($_COOKIE['token']) ? $this->auth($users) : $this->csrf();
+    }
+
+    public function csrf_token(): array
+    {
+        return ['csrf' => $this->token];
+    }
+
+    public function bool(): bool
+    {
+        return $this->bool;
+    }
+
+    public function logout(): void
+    {
+        setcookie('token', '', 0, '/');
     }
 }

@@ -6,24 +6,26 @@ class Auth extends View\Template
 {
     private Access $access;
 
-    public function auth(): bool
+    public bool $auth;
+
+    public function __construct()
     {
         $this->access = new Access;
 
-        return $this->access->bool;
+        $this->auth = $this->access->bool();
     }
 
     public function login(): array
     {
-        return $this->render_template('auth/login.php', ['token' => $this->access->token]);
+        return $this->render_template('auth/login.php', $this->access->csrf_token());
     }
 
     public function logout(): array
     {
-        if ($this->auth())
+        if ($this->auth)
             return $this->login();
 
-        setcookie('token', '', 0, '/');
+        $this->access->logout();
 
         return parent::redirect_response(parent::url_for('main'));
     }

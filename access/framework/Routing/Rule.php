@@ -5,6 +5,7 @@ namespace Framework\Routing;
 class Rule
 {
     protected static array $rules = array();
+
     private string $current;
 
     public static function route(string $path, string $name, string $class): Rule

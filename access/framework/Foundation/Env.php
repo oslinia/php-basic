@@ -15,8 +15,8 @@ class Env extends Frame
         fwrite($f, '<?php return ' . var_export([
             'dirname' => dirname($filename),
             'public' => '/static/',
-            'salt' => uniqid('', true),
             'inaction' => 3600,
+            'salt' => uniqid('', true),
         ], true) . ';');
 
         fclose($f);

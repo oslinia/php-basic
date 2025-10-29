@@ -1,7 +1,7 @@
 <?php
 
 /**
- * @var string $token
+ * @var string $csrf
  */
 
 use function Framework\{url_for, url_path};
@@ -19,12 +19,12 @@ use function Framework\{url_for, url_path};
 </head>
 
 <body>
-    <div class="container login">
+    <div class="form">
         <div class="py-3 text-end">
-            <a href="<?= url_for('main') ?>">Application</a>
+            <a href="<?= url_for('main') ?>">Return</a>
         </div>
         <form method="post">
-            <input type="hidden" name="token" value="<?= $token ?>">
+            <input type="hidden" name="csrf" value="<?= $csrf ?>">
             <div class="mb-3">
                 <label for="name" class="form-label">Username</label>
                 <input type="text" class="form-control" id="name"
