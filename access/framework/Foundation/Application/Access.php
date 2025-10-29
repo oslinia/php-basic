@@ -55,51 +55,48 @@ class Access extends Frame
         $this->bool = false;
     }
 
-    private function post(array $users): void
+    private function login(): void
     {
-        if (isset($users[$_POST['name']])) {
-            $user = $users[$_POST['name']];
+        $this->token = md5(microtime() . $GLOBALS['_FW']->env['salt']);
 
-            if (
-                $_POST['token'] === $this->decrypt($_COOKIE['login'])
-                and
-                password_verify(
-                    $_POST['password'],
-                    require parent::root('resource', 'user', $user, 'password.php'),
-                )
-            ) {
-                setcookie('login', '', 0, '/');
+        setcookie('login', $this->encrypt($this->token), path: '/');
+    }
 
-                $this->token(
-                    $_POST['name'],
-                    $user,
-                    parent::root('resource', 'user', $user, 'token'),
-                );
-            }
+    private function post(string $user): void
+    {
+        if (
+            $_POST['token'] === $this->decrypt($_COOKIE['login'])
+            and
+            password_verify(
+                $_POST['password'],
+                require parent::root('resource', 'user', $user, 'password.php'),
+            )
+        ) {
+            setcookie('login', '', 0, '/');
+
+            $this->token(
+                $_POST['name'],
+                $user,
+                parent::root('resource', 'user', $user, 'token'),
+            );
         }
     }
 
     private function auth(array $users): void
     {
-        if (isset($_COOKIE['token'])) {
-            [$name, $token] = explode('.', $this->decrypt($_COOKIE['token']));
+        [$name, $token] = explode('.', $this->decrypt($_COOKIE['token']));
 
-            if (isset($users[$name])) {
-                $user = $users[$name];
+        if (isset($users[$name])) {
+            $user = $users[$name];
 
-                if (
-                    is_file($filename = parent::root('resource', 'user', $user, 'token'))
-                    and
-                    $GLOBALS['_FW']->env['inaction'] > (time() - filemtime($filename))
-                    and
-                    $token === file_get_contents($filename)
-                )
-                    $this->token($name, $user, $filename);
-            }
-        } else {
-            $this->token = md5(microtime() . $GLOBALS['_FW']->env['salt']);
-
-            setcookie('login', $this->encrypt($this->token), path: '/');
+            if (
+                is_file($filename = parent::root('resource', 'user', $user, 'token'))
+                and
+                $GLOBALS['_FW']->env['inaction'] > (time() - filemtime($filename))
+                and
+                $token === file_get_contents($filename)
+            )
+                $this->token($name, $user, $filename);
         }
     }
 
@@ -114,8 +111,8 @@ class Access extends Frame
             and
             isset($_POST['password'])
         )
-            $this->post($users);
+            isset($users[$_POST['name']]) ? $this->post($users[$_POST['name']]) : $this->login();
         else
-            $this->auth($users);
+            isset($_COOKIE['token']) ? $this->auth($users) : $this->login();
     }
 }
