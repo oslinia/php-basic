@@ -1,7 +1,8 @@
 <?php
 
 /**
- * @var string $content
+ * @var string $title
+ * @var string $body
  */
 
 use function Framework\url_path;
@@ -9,19 +10,14 @@ use function Framework\url_path;
 ?>
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Control Panel</title>
+    <title><?= $title ?></title>
     <link rel="stylesheet" href="<?= url_path('bootstrap/5.3.8.css') ?>">
     <link rel="stylesheet" href="<?= url_path('panel/main.css') ?>">
 </head>
-
-<body>
-    <div class="container"><?= PHP_EOL . $content ?>
-    </div>
-    <script src="<?= url_path('bootstrap/5.3.8.bundle.js') ?>"></script>
+<body><?= PHP_EOL . $body ?>
+<script src="<?= url_path('bootstrap/5.3.8.bundle.js') ?>"></script>
 </body>
-
 </html>

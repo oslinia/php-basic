@@ -4,101 +4,71 @@ namespace Framework\Foundation\Application;
 
 use Framework\Frame;
 
+use function Framework\salt_decrypt;
+use function Framework\salt_encrypt;
+
 class Access extends Frame
 {
     private bool $bool = true;
-    private string $token;
 
-    private function encrypt(string $string): string
+    private function token(string $dirname, string $username, string $filename): void
     {
-        return base64_encode(
-            (
-                $iv = openssl_random_pseudo_bytes(openssl_cipher_iv_length('AES-128-CBC'))
-            ) . hash_hmac(
-                'sha256',
-                $raw = openssl_encrypt(
-                    $string,
-                    'AES-128-CBC',
-                    $GLOBALS['_FW']->env['salt'],
-                    OPENSSL_RAW_DATA,
-                    $iv
-                ),
-                $GLOBALS['_FW']->env['salt'],
-                true
-            ) . $raw
-        );
-    }
-
-    private function decrypt(string $string): string
-    {
-        return openssl_decrypt(
-            substr(
-                $decode = base64_decode($string),
-                ($ivlen = openssl_cipher_iv_length('AES-128-CBC')) + 32
-            ),
-            'AES-128-CBC',
-            $GLOBALS['_FW']->env['salt'],
-            OPENSSL_RAW_DATA,
-            substr($decode, 0, $ivlen)
-        );
-    }
-
-    private function token(string $name, string $user, string $filename): void
-    {
-        [$offset, $salt] = require parent::root('resource', 'user', $user, 'token.php');
+        [$offset, $salt] = require parent::root('resource', 'user', $dirname, 'token.php');
 
         $token = md5((microtime(true) - $offset) . $salt);
 
+        setcookie('token', salt_encrypt($username . '.' . $token), path: '/');
+
         file_put_contents($filename, $token);
-        setcookie('token', $this->encrypt($name . '.' . $token), path: '/');
 
         $this->bool = false;
     }
 
-    private function csrf(): void
+    private function post(string $username, array $users): void
     {
-        $this->token = md5(microtime() . $GLOBALS['_FW']->env['salt']);
+        $verify = function (string $dirname, string $username): void {
+            if (
+                $_POST['csrf'] === salt_decrypt($_COOKIE['csrf'])
+                and
+                password_verify(
+                    $_POST['password'],
+                    require parent::root('resource', 'user', $dirname, 'password.php'),
+                )
+            ) {
+                setcookie('csrf', '', 0, '/');
 
-        setcookie('csrf', $this->encrypt($this->token), path: '/');
-    }
+                $this->token(
+                    $dirname,
+                    $username,
+                    parent::root('resource', 'user', $dirname, 'token'),
+                );
+            }
+        };
 
-    private function login(string $user): void
-    {
-        if (
-            $_POST['csrf'] === $this->decrypt($_COOKIE['csrf'])
-            and
-            password_verify(
-                $_POST['password'],
-                require parent::root('resource', 'user', $user, 'password.php'),
-            )
-        ) {
-            setcookie('csrf', '', 0, '/');
+        if (str_contains($username, '@')) {
+            $users = array_reverse($users);
 
-            $this->token(
-                $_POST['name'],
-                $user,
-                parent::root('resource', 'user', $user, 'token'),
-            );
+            !isset($users[$username]) || $verify($username, $users[$username]);
         } else {
-            $this->csrf();
+            !isset($users[$username]) || $verify($users[$username], $username);
         }
     }
 
-    private function auth(array $users): void
+    private function cookie(array $users): void
     {
-        [$name, $token] = explode('.', $this->decrypt($_COOKIE['token']));
+        [$username, $token] = explode('.', salt_decrypt($_COOKIE['token']));
 
-        if (isset($users[$name])) {
-            $user = $users[$name];
+        if (isset($users[$username])) {
+            $dirname = $users[$username];
 
             if (
-                is_file($filename = parent::root('resource', 'user', $user, 'token'))
+                is_file($filename = parent::root('resource', 'user', $dirname, 'token'))
                 and
                 $GLOBALS['_FW']->env['inaction'] > (time() - filemtime($filename))
                 and
                 $token === file_get_contents($filename)
             )
-                $this->token($name, $user, $filename);
+                $this->token($dirname, $username, $filename);
         }
     }
 
@@ -106,30 +76,20 @@ class Access extends Frame
     {
         $users = require parent::root('resource', 'user', 'users.php');
 
-        if (
+        (
             'POST' === $_SERVER['REQUEST_METHOD']
             and
-            isset($_POST['name'])
+            isset($_POST['username'])
             and
             isset($_POST['password'])
-        )
-            isset($users[$_POST['name']]) ? $this->login($users[$_POST['name']]) : $this->csrf();
-        else
-            isset($_COOKIE['token']) ? $this->auth($users) : $this->csrf();
+        ) ?
+            $this->post($_POST['username'], $users)
+            :
+            !isset($_COOKIE['token']) || $this->cookie($users);
     }
 
-    public function csrf_token(): array
-    {
-        return ['csrf' => $this->token];
-    }
-
-    public function bool(): bool
+    public function __invoke(): bool
     {
         return $this->bool;
-    }
-
-    public function logout(): void
-    {
-        setcookie('token', '', 0, '/');
     }
 }

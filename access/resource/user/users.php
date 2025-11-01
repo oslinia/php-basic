@@ -1,3 +1,3 @@
 <?php return array(
-    'user' => 'supervisor',
+    'user' => 'superuser',
 );

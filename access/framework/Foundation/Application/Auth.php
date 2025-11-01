@@ -4,20 +4,16 @@ namespace Framework\Foundation\Application;
 
 class Auth extends View\Template
 {
-    private Access $access;
-
     public bool $auth;
 
     public function __construct()
     {
-        $this->access = new Access;
-
-        $this->auth = $this->access->bool();
+        $this->auth = new Access()();
     }
 
     public function login(): array
     {
-        return $this->render_template('auth/login.php', $this->access->csrf_token());
+        return parent::render_template('auth/login.php');
     }
 
     public function logout(): array
@@ -25,7 +21,7 @@ class Auth extends View\Template
         if ($this->auth)
             return $this->login();
 
-        $this->access->logout();
+        setcookie('token', '', 0, '/');
 
         return parent::redirect_response(parent::url_for('main'));
     }
