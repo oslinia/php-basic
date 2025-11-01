@@ -1,0 +1,42 @@
+@charset "UTF-8";
+
+a {
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+@media (min-width:1200px) {
+
+    .container {
+        max-width: 960px
+    }
+}
+
+@media (min-width:1400px) {
+
+    .container {
+        max-width: 960px
+    }
+}
+
+.form {
+    --bs-gutter-x: 1.5rem;
+    --bs-gutter-y: 0;
+    width: 100%;
+    padding-top: 1rem;
+    padding-right: calc(var(--bs-gutter-x) * .5);
+    padding-bottom: 1rem;
+    padding-left: calc(var(--bs-gutter-x) * .5);
+    margin-right: auto;
+    margin-left: auto
+}
+
+@media (min-width:576px) {
+
+    .form {
+        max-width: 540px
+    }
+}
